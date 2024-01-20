@@ -2,20 +2,7 @@ use std::rc::Rc;
 
 struct Term {
 
-    operation: fn(Vec<Term>),       // Function call for this operation
-    parent: Option<Rc<Term>>,       // Reference-counted parent of this term or None() for root term
-    children: Vec<Term>,            // Argterms of this term
-
-}
-
-impl Term {
-
-    fn is_root(&self) -> bool{
-        match &self.parent {
-            Some(_) => false,
-            None => true,
-        }
-    }
+    operation: String       // Function call for this operation
 
 }
 
@@ -104,7 +91,7 @@ fn parse(code: String, parent: Option<Rc<Term>>) -> Term {
      */
     
     
-    let sliced = code.split(" ");
+    let sliced = code.split(&[' ']);
 
     for k in sliced {
 
