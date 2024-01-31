@@ -1,59 +1,54 @@
-use std::rc::Rc;
+use std::collections::VecDeque;
 
-struct Term {
+struct Block {
 
-    operation: String       // Function call for this operation
-
-}
-
-struct Const {
-
-    parent: Option<Rc<Term>>,
-    value: f32,
+    operation: fn(Vec<Term>),       // Function call for this operation
+    children: Vec<Term>,            // Argterms of this term
 
 }
 
-enum TermVal {
+enum Term {
 
-    Term(Term),
-    Const(Const),
+    Constant(f32),
+    Var(String),
+    Subterm(Vec<Block>),
 
 }
 
 
-fn mul(terms: Vec<Term>) -> Result<Term,String> {
+fn mul(terms: Vec<Term>) -> Result<Block,String> {
     todo!();
 }
 
-fn div(terms: Vec<Term>) -> Result<Term,String> {
+fn div(terms: Vec<Term>) -> Result<Block,String> {
     todo!();
 }
 
-fn add(terms: Vec<Term>) -> Result<Term,String> {
+fn add(terms: Vec<Term>) -> Result<Block,String> {
     todo!();
 }
 
-fn sub(terms: Vec<Term>) -> Result<Term,String> {
+fn sub(terms: Vec<Term>) -> Result<Block,String> {
     todo!();
 }
 
-fn sin(terms: Vec<Term>) -> Result<Term,String> {
+fn sin(terms: Vec<Term>) -> Result<Block,String> {
     todo!();
 }
 
-fn cos(terms: Vec<Term>) -> Result<Term,String> {
+fn cos(terms: Vec<Term>) -> Result<Block,String> {
     todo!();
 }
 
-fn tan(terms: Vec<Term>) -> Result<Term,String> {
+fn tan(terms: Vec<Term>) -> Result<Block,String> {
     todo!();
 }
 
-fn abs(terms: Vec<Term>) -> Result<Term,String> {
+fn abs(terms: Vec<Term>) -> Result<Block,String> {
     todo!();
 }
 
-const OPS:  [( &str, fn(Vec<Term>) -> Result<Term,String> ); 8] = [
+const OPS:  [( &str, fn(Vec<Term>) -> Result<Block,String> ); 8] = [
     ("*", mul),
     ("/", div),
     ("+", add),
@@ -64,13 +59,74 @@ const OPS:  [( &str, fn(Vec<Term>) -> Result<Term,String> ); 8] = [
     ("abs", abs),
 ];
 
-fn process_term(opstring: String, remainder: String) -> Term {
+// Take in a Vec of Strings, and break it up into a vec of Terms which contain their own
+// vecs of Terms. If something is not a subterm, just append it to the current running vec of
+// termvals. If you're entering a new subterm, split it out and parse that recursively.
+fn process_term(opstring: &mut VecDeque<&str>) -> Result<(Vec<Term>, i32), String> {
 
-    todo!();
+    let mut expression: Vec<Term>;
+
+    let mut before_term = true;
+    let mut in_term = false;
+    let mut end_of_term = false;
+    let mut found_op = false;
+
+    let mut result_op: fn(Vec<Term>) -> Result<Block, String>;
+    let mut result_children: Vec<Term>;
+
+    while !end_of_term || before_term {
+
+        if let Some(next) = opstring.pop_front() {
+
+            if next == "(" && !in_term {
+                println!("first paren in term");
+                in_term = true;
+                before_term = false;
+            }
+
+            else if next == ")" && in_term {
+                end_of_term = true;
+                in_term = false;
+            }
+
+            else if next == "(" && in_term {
+                opstring.push_front("(");
+                println!("Passing down {:?}", opstring);
+                if let Ok(subterm) = process_term(opstring) {
+                    
+                }
+            }
+
+            else if let Some(matched_fun) = OPS.iter().find(|op| (op.0 == next)) {
+                println!("matched on a function {}", matched_fun.0);
+                result_op = matched_fun.1;
+            }
+            else {
+
+                if let Ok(num) = next.parse::<f32>() {
+                    
+                }
+
+            }
+
+            println!("{}",next);
+        }
+        else 
+        {
+
+            end_of_term = true;
+            return Err("Badly matched parens somewhere".to_string())
+        
+        }
+
+    }
+
+    println!("end of term, returning up");
+    Err("Not Working Yet".to_string())
 
 }
 
-fn parse(code: String, parent: Option<Rc<Term>>) -> Term {
+fn parse(code: &str) -> Result<(Vec<Term>, i32), String>  {
 
     /*
      * * Strip newlines and split on whitespace and ( ) to create list of token strings
@@ -91,20 +147,24 @@ fn parse(code: String, parent: Option<Rc<Term>>) -> Term {
      */
     
     
-    let sliced = code.split(&[' ']);
+    let lisp = code.to_string();
+    let mut sliced = lisp.split(&[' ']).collect();
 
-    for k in sliced {
+    if let Err(output) = process_term(&mut sliced) {
 
-        println!("{}", k);
+        println!("Error {}", output);
 
     }
 
-    todo!();
+
+    Err("Not Working Yet".to_string())
 
 }
 
 fn main() {
-    let input = "( + 3 ( * 2 3 ) 4 4 ( sin 0.3 ) )";
-    parse(input.to_string(), None);
+    //let input = "( + 3 ( * 2 3 ) 4 5 ( sin 0.3 ) )";
+    let input = "( + 13 ( - 4 5 ) )";
+    println!("parsing {}", input);
+    parse(input);
     println!("Parsing code {}", input);
 }
