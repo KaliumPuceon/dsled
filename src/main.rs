@@ -1,14 +1,14 @@
 use std::collections::VecDeque;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 struct Block {
 
-    operation: fn(VecDeque<Term>) -> Result<Term, String>,       // Function call for this operation
+    operation: fn(&mut VecDeque<Term>) -> Result<Term, String>,       // Function call for this operation
     children: VecDeque<Term>,            // Argterms of this term
 
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 enum Term {
 
     Constant(f32),
@@ -17,23 +17,23 @@ enum Term {
 
 }
 
-fn compute(mut block: Block) -> Term{
+fn compute(block: &mut Block) -> Term{
 
     let solved_children = block.children.iter_mut();
     solved_children.for_each(|term| {
 
         if let Term::Subterm(subterm_block) = term {
 
-            *term = compute(subterm_block.clone());
+            *term = compute(subterm_block);
 
         }
 
     });
-    return (block.operation)(block.children).unwrap();
+    return (block.operation)(&mut block.children).unwrap();
 
 }
 
-fn mul(mut terms: VecDeque<Term>) -> Result<Term,String> {
+fn mul(terms: &mut VecDeque<Term>) -> Result<Term,String> {
     
     if let Some(Term::Constant(mut acc)) = terms.pop_front() {
         while let Some(Term::Constant(x)) = terms.pop_front(){
@@ -44,7 +44,7 @@ fn mul(mut terms: VecDeque<Term>) -> Result<Term,String> {
     Err("Multiply failed".to_string())
 }
 
-fn div(mut terms: VecDeque<Term>) -> Result<Term,String> {
+fn div(terms: &mut VecDeque<Term>) -> Result<Term,String> {
     if let Some(Term::Constant(numerator)) = terms.pop_front() {
         if let Some(Term::Constant(denominator)) = terms.pop_front() {
             return Ok(Term::Constant(numerator/denominator))
@@ -53,7 +53,7 @@ fn div(mut terms: VecDeque<Term>) -> Result<Term,String> {
     Err("Divide failed failed".to_string())
 }
 
-fn add(mut terms: VecDeque<Term>) -> Result<Term,String> {
+fn add(terms: &mut VecDeque<Term>) -> Result<Term,String> {
 
     if let Some(Term::Constant(mut acc)) = terms.pop_front() {
         while let Some(Term::Constant(x)) = terms.pop_front(){
@@ -65,7 +65,7 @@ fn add(mut terms: VecDeque<Term>) -> Result<Term,String> {
 
 }
 
-fn sub(mut terms: VecDeque<Term>) -> Result<Term,String> {
+fn sub(terms: &mut VecDeque<Term>) -> Result<Term,String> {
 
     if let Some(Term::Constant(mut acc)) = terms.pop_front() {
         while let Some(Term::Constant(x)) = terms.pop_front(){
@@ -77,35 +77,35 @@ fn sub(mut terms: VecDeque<Term>) -> Result<Term,String> {
 
 }
 
-fn sin(mut terms: VecDeque<Term>) -> Result<Term,String> {
+fn sin(terms: &mut VecDeque<Term>) -> Result<Term,String> {
     if let Some(Term::Constant(x)) = terms.pop_front() {
         return Ok(Term::Constant(x.sin()))
     }
     Err("Sine failed".to_string())
 }
 
-fn cos(mut terms: VecDeque<Term>) -> Result<Term,String> {
+fn cos(terms: &mut VecDeque<Term>) -> Result<Term,String> {
     if let Some(Term::Constant(x)) = terms.pop_front() {
         return Ok(Term::Constant(x.cos()))
     }
     Err("Cosine failed".to_string())
 }
 
-fn tan(mut terms: VecDeque<Term>) -> Result<Term,String> {
+fn tan(terms: &mut VecDeque<Term>) -> Result<Term,String> {
     if let Some(Term::Constant(x)) = terms.pop_front() {
         return Ok(Term::Constant(x.tan()))
     }
     Err("Tangent failed".to_string())
 }
 
-fn abs(mut terms: VecDeque<Term>) -> Result<Term,String> {
+fn abs(terms: &mut VecDeque<Term>) -> Result<Term,String> {
     if let Some(Term::Constant(x)) = terms.pop_front() {
         return Ok(Term::Constant(x.abs()))
     }
     Err("Abs failed".to_string())
 }
 
-const OPS:  [( &str, fn(VecDeque<Term>) -> Result<Term ,String> ); 8] = [
+const OPS:  [( &str, fn(&mut VecDeque<Term>) -> Result<Term ,String> ); 8] = [
     ("*", mul),
     ("/", div),
     ("+", add),
@@ -126,7 +126,7 @@ fn process_term(opstring: &mut VecDeque<&str>) -> Result<Block, String> {
     let mut end_of_term = false;
     let mut found_op = false;
 
-    let mut result_op: Option<fn(VecDeque<Term>) -> Result<Term, String>> = None;
+    let mut result_op: Option<fn(&mut VecDeque<Term>) -> Result<Term, String>> = None;
     let mut result_children: VecDeque<Term> = vec![].into();
 
     while !end_of_term || before_term {
@@ -244,7 +244,7 @@ fn main() {
     println!("parsing {}", input);
     let computable_blocks = parse(input);
     println!("Parsing code {}", input);
-    let output = compute(computable_blocks.unwrap());
+    let output = compute(&mut computable_blocks.unwrap());
 
     println!("{:?}", output);
 
